@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PD Symptom Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #eef7f1;
+    --card: #ffffff;
+    --card2: #f4fbf6;
+    --green: #2e9e68;
+    --green2: #4ab882;
+    --red: #d95f5f;
+    --blue: #4a7fe0;
+    --amber: #d4900a;
+    --text: #1a3328;
+    --muted: #7aaa8e;
+    --border: #cce8d8;
+    --shadow: 0 2px 14px rgba(46,158,104,0.09);
+    --r: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    min-height: 100vh;
+    padding-bottom: 100px;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, #2e9e68, #4ab882);
+    padding: 30px 20px 18px;
+    text-align: center;
+    color: white;
+  }
+  header h1 { font-size: 19px; font-weight: 700; letter-spacing: 2px; }
+  .clock { font-family: 'DM Mono', monospace; font-size: 12px; opacity: 0.82; margin-top: 4px; }
+
+  /* ── Tab bar ── */
+  .tabbar {
+    display: flex;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .tab {
+    flex: 1; padding: 13px 4px; text-align: center;
+    background: none; border: none; border-bottom: 3px solid transparent;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+  /* ── Pages ── */
+  .page { display: none; padding: 14px 16px 0; }
+  .page.active { display: block; }
+
+  /* ── Session bar ── */
+  .sess-bar {
+    display: flex; background: var(--card); border-radius: 14px;
+    border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); margin-bottom: 12px;
+  }
+  .sess-btn {
+    flex: 1; padding: 13px 4px; text-align: center; background: none;
+    border: none; border-right: 1px solid var(--border);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .sess-btn:last-child { border-right: none; }
+  .sess-btn .si { font-size: 18px; display: block; margin-bottom: 2px; }
+  .sess-btn.active { background: linear-gradient(135deg, #2e9e68, #4ab882); color: white; }
+
+  /* ── Card sections ── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 16px 15px; margin-bottom: 12px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 12px; font-weight: 700; letter-spacing: 1.2px;
+    color: var(--green); text-transform: uppercase; margin-bottom: 13px;
+  }
+
+  /* ── Med buttons ── */
+  .med-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .med-btn {
+    background: var(--card2); border: 2px solid var(--border); border-radius: 12px;
+    padding: 14px 8px; text-align: center;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--text); cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .med-btn .me { font-size: 20px; display: block; margin-bottom: 3px; }
+  .med-btn.s-on   { border-color:#2e9e68; background:#e6f7ef; color:#1e7a50; }
+  .med-btn.s-off  { border-color:#d95f5f; background:#fdf0f0; color:#b03030; }
+  .med-btn.s-peak { border-color:#4a7fe0; background:#eef2fd; color:#2a5ab8; }
+  .med-btn.s-wear { border-color:#d4900a; background:#fdf5e6; color:#a06800; }
+
+  /* ── Intensity ── */
+  .sym-block { margin-bottom: 15px; }
+  .sym-block:last-child { margin-bottom: 0; }
+  .sym-label { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 7px; }
+  .int-row { display: flex; gap: 5px; }
+  .int-btn {
+    flex: 1; background: var(--card2); border: 2px solid var(--border); border-radius: 9px;
+    padding: 11px 2px; text-align: center;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 600;
+    color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none; line-height: 1.3;
+  }
+  .int-btn .nb { font-size: 15px; font-weight: 700; display: block; }
+  .int-btn[data-v="0"].on { border-color:#4ade80; background:#f0fdf4; color:#166534; }
+  .int-btn[data-v="1"].on { border-color:#a3e635; background:#f7fee7; color:#3a5c0a; }
+  .int-btn[data-v="2"].on { border-color:#f59e0b; background:#fffbeb; color:#92400e; }
+  .int-btn[data-v="3"].on { border-color:#f97316; background:#fff7ed; color:#9a3412; }
+  .int-btn[data-v="4"].on { border-color:#ef4444; background:#fef2f2; color:#991b1b; }
+
+  hr.sep { border: none; border-top: 1px solid var(--border); margin: 13px 0; }
+
+  /* ── Activity ── */
+  .act-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+  .act-btn {
+    background: var(--card2); border: 2px solid var(--border); border-radius: 11px;
+    padding: 12px 4px; text-align: center;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 600;
+    color: var(--muted); cursor: pointer; transition: all 0.15s; user-select: none;
+  }
+  .act-btn .ae { font-size: 18px; display: block; margin-bottom: 3px; }
+  .act-btn.on { border-color: var(--green); background: #e6f7ef; color: #1e7a50; }
+
+  /* ── Note ── */
+  .note-input {
+    width: 100%; background: var(--card2); border: 2px solid var(--border);
+    border-radius: 11px; padding: 12px; font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px; color: var(--text); resize: none; outline: none; transition: border-color 0.15s;
+  }
+  .note-input:focus { border-color: var(--green); }
+  .note-input::placeholder { color: var(--muted); }
+
+  /* ── Submit bar ── */
+  .submit-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    padding: 12px 16px 22px;
+    background: linear-gradient(to top, #eef7f1 72%, transparent);
+  }
+  .submit-btn {
+    width: 100%; background: linear-gradient(135deg, #2e9e68, #4ab882);
+    color: white; border: none; border-radius: 13px; padding: 17px;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; font-weight: 700;
+    letter-spacing: 1px; cursor: pointer; box-shadow: 0 4px 16px rgba(46,158,104,0.3);
+    transition: all 0.15s; user-select: none;
+  }
+  .submit-btn:active { transform: scale(0.98); }
+  .submit-btn:disabled { opacity: 0.5; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; top: 70px; left: 50%;
+    transform: translateX(-50%) translateY(-20px); opacity: 0;
+    background: white; border: 2px solid var(--green); color: var(--green);
+    padding: 11px 22px; border-radius: 100px; font-size: 13px; font-weight: 700;
+    z-index: 999; transition: all 0.25s; white-space: nowrap; box-shadow: var(--shadow);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* ── Settings ── */
+  .settings-label { font-size: 12px; color: var(--muted); font-weight: 600; margin-bottom: 6px; display: block; }
+  .settings-input {
+    width: 100%; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 9px; padding: 11px 12px; color: var(--text); font-size: 13px;
+    font-family: 'DM Mono', monospace; outline: none; margin-bottom: 12px;
+    transition: border-color 0.15s;
+  }
+  .settings-input:focus { border-color: var(--green); }
+  .settings-note {
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+    padding: 12px 14px; font-size: 12px; color: #166534; line-height: 1.7; margin-bottom: 12px;
+  }
+  .settings-note strong { display: block; margin-bottom: 4px; }
+  .settings-note code { font-family: 'DM Mono', monospace; background: #dcfce7; padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+  /* ── Report ── */
+  .report-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;
+  }
+  .report-title { font-size: 16px; font-weight: 700; }
+  .report-count { font-size: 12px; color: var(--muted); }
+
+  .report-filter { display: flex; gap: 7px; margin-bottom: 14px; flex-wrap: wrap; }
+  .filter-btn {
+    background: var(--card); border: 1px solid var(--border); border-radius: 100px;
+    padding: 6px 14px; font-size: 12px; font-weight: 600; color: var(--muted);
+    cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.12s;
+  }
+  .filter-btn.active { background: var(--green); border-color: var(--green); color: white; }
+
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 14px; }
+  .summary-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 13px 12px; box-shadow: var(--shadow); text-align: center;
+  }
+  .summary-card .sc-label { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 5px; }
+  .summary-card .sc-val { font-size: 22px; font-weight: 700; color: var(--text); }
+  .summary-card .sc-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .avg-bars { margin-bottom: 14px; }
+  .avg-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .avg-label { font-size: 12px; font-weight: 600; color: var(--text); width: 80px; flex-shrink: 0; }
+  .avg-bar-bg { flex: 1; height: 8px; background: var(--card2); border-radius: 100px; overflow: hidden; }
+  .avg-bar-fill { height: 100%; border-radius: 100px; background: linear-gradient(90deg, #4ade80, #f97316); transition: width 0.4s; }
+  .avg-num { font-size: 12px; font-weight: 700; color: var(--text); width: 24px; text-align: right; }
+
+  .log-list { }
+  .log-item {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 13px 14px; margin-bottom: 9px; box-shadow: var(--shadow);
+  }
+  .log-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .log-date { font-size: 12px; font-weight: 700; color: var(--text); }
+  .log-sess { font-size: 11px; font-weight: 600; color: white; background: var(--green);
+    padding: 2px 9px; border-radius: 100px; }
+  .log-med { font-size: 11px; color: var(--muted); margin-bottom: 7px; }
+  .log-scores { display: flex; gap: 5px; flex-wrap: wrap; }
+  .score-chip {
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 100px;
+    border: 1px solid var(--border); background: var(--card2); color: var(--text);
+  }
+  .score-chip.s0 { background:#f0fdf4; color:#166534; border-color:#bbf7d0; }
+  .score-chip.s1 { background:#f7fee7; color:#3a5c0a; border-color:#d9f99d; }
+  .score-chip.s2 { background:#fffbeb; color:#92400e; border-color:#fde68a; }
+  .score-chip.s3 { background:#fff7ed; color:#9a3412; border-color:#fed7aa; }
+  .score-chip.s4 { background:#fef2f2; color:#991b1b; border-color:#fecaca; }
+  .log-note { font-size: 12px; color: var(--muted); margin-top: 7px; font-style: italic; }
+
+  .empty-state { text-align: center; padding: 50px 20px; color: var(--muted); }
+  .empty-state .ei { font-size: 40px; margin-bottom: 10px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  .export-btn {
+    width: 100%; background: var(--card); border: 2px solid var(--green); border-radius: 12px;
+    padding: 14px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700;
+    color: var(--green); cursor: pointer; margin-bottom: 10px; transition: all 0.15s;
+  }
+  .export-btn:active { background: #e6f7ef; }
+
+  .report-gen-btn {
+    width: 100%; background: linear-gradient(135deg, #2e9e68, #4ab882);
+    border: none; border-radius: 12px; padding: 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700;
+    color: white; cursor: pointer; margin-bottom: 10px; transition: all 0.15s;
+    box-shadow: 0 3px 12px rgba(46,158,104,0.25);
+  }
+
+  /* AI Report modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.45); z-index: 200; align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    background: white; border-radius: 20px 20px 0 0; padding: 24px 20px 40px;
+    width: 100%; max-height: 80vh; overflow-y: auto;
+  }
+  .modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 10px; margin: 0 auto 18px; }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+  .report-text {
+    font-size: 14px; line-height: 1.8; color: var(--text); white-space: pre-wrap;
+    background: var(--card2); border-radius: 12px; padding: 16px; border: 1px solid var(--border);
+  }
+  .modal-close {
+    width: 100%; background: var(--card2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px; margin-top: 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700;
+    color: var(--muted); cursor: pointer;
+  }
+  .spinner { text-align: center; padding: 30px; font-size: 24px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌿 PD Symptom Tracker</h1>
+  <div class="clock" id="clock">--</div>
+</header>
+
+<!-- Tab bar -->
+<div class="tabbar">
+  <button class="tab active" onclick="showTab('log')">📋 Log</button>
+  <button class="tab" onclick="showTab('report')">📊 Report</button>
+  <button class="tab" onclick="showTab('settings')">⚙️ Settings</button>
+</div>
+
+<!-- ═══════════════ LOG PAGE ═══════════════ -->
+<div class="page active" id="page-log">
+
+  <!-- Session -->
+  <div class="sess-bar" style="margin-top:14px;">
+    <button class="sess-btn" data-s="Morning" onclick="selSess(this)"><span class="si">🌅</span>Morning</button>
+    <button class="sess-btn" data-s="Noon" onclick="selSess(this)"><span class="si">☀️</span>Noon</button>
+    <button class="sess-btn" data-s="Evening" onclick="selSess(this)"><span class="si">🌙</span>Evening</button>
+  </div>
+
+  <!-- Medication -->
+  <div class="card">
+    <div class="card-title">💊 Medication Status</div>
+    <div class="med-grid">
+      <button class="med-btn" data-m="ON" onclick="selMed(this)"><span class="me">✅</span>ON Period</button>
+      <button class="med-btn" data-m="OFF" onclick="selMed(this)"><span class="me">❌</span>OFF Period</button>
+      <button class="med-btn" data-m="Peak" onclick="selMed(this)"><span class="me">⚡</span>Peak Effect</button>
+      <button class="med-btn" data-m="Wearing Off" onclick="selMed(this)"><span class="me">⏳</span>Wearing Off</button>
+    </div>
+  </div>
+
+  <!-- Symptoms -->
+  <div class="card">
+    <div class="card-title">📊 Symptom Severity &nbsp;<span style="font-weight:400;color:var(--muted)">0 = none → 4 = severe</span></div>
+
+    <div class="sym-block">
+      <div class="sym-label">🤝 Tremor</div>
+      <div class="int-row" data-sym="tremor">
+        <button class="int-btn" data-v="0" onclick="selInt(this,'tremor')"><span class="nb">0</span>None</button>
+        <button class="int-btn" data-v="1" onclick="selInt(this,'tremor')"><span class="nb">1</span>Mild</button>
+        <button class="int-btn" data-v="2" onclick="selInt(this,'tremor')"><span class="nb">2</span>Mod</button>
+        <button class="int-btn" data-v="3" onclick="selInt(this,'tremor')"><span class="nb">3</span>Sev</button>
+        <button class="int-btn" data-v="4" onclick="selInt(this,'tremor')"><span class="nb">4</span>Max</button>
+      </div>
+    </div>
+    <hr class="sep">
+    <div class="sym-block">
+      <div class="sym-label">🚶 Rigidity / Slowness</div>
+      <div class="int-row" data-sym="rigidity">
+        <button class="int-btn" data-v="0" onclick="selInt(this,'rigidity')"><span class="nb">0</span>None</button>
+        <button class="int-btn" data-v="1" onclick="selInt(this,'rigidity')"><span class="nb">1</span>Mild</button>
+        <button class="int-btn" data-v="2" onclick="selInt(this,'rigidity')"><span class="nb">2</span>Mod</button>
+        <button class="int-btn" data-v="3" onclick="selInt(this,'rigidity')"><span class="nb">3</span>Sev</button>
+        <button class="int-btn" data-v="4" onclick="selInt(this,'rigidity')"><span class="nb">4</span>Max</button>
+      </div>
+    </div>
+    <hr class="sep">
+    <div class="sym-block">
+      <div class="sym-label">⚖️ Balance</div>
+      <div class="int-row" data-sym="balance">
+        <button class="int-btn" data-v="0" onclick="selInt(this,'balance')"><span class="nb">0</span>Good</button>
+        <button class="int-btn" data-v="1" onclick="selInt(this,'balance')"><span class="nb">1</span>Slight</button>
+        <button class="int-btn" data-v="2" onclick="selInt(this,'balance')"><span class="nb">2</span>Mod</button>
+        <button class="int-btn" data-v="3" onclick="selInt(this,'balance')"><span class="nb">3</span>Poor</button>
+        <button class="int-btn" data-v="4" onclick="selInt(this,'balance')"><span class="nb">4</span>Fall risk</button>
+      </div>
+    </div>
+    <hr class="sep">
+    <div class="sym-block">
+      <div class="sym-label">😴 Fatigue</div>
+      <div class="int-row" data-sym="fatigue">
+        <button class="int-btn" data-v="0" onclick="selInt(this,'fatigue')"><span class="nb">0</span>None</button>
+        <button class="int-btn" data-v="1" onclick="selInt(this,'fatigue')"><span class="nb">1</span>Mild</button>
+        <button class="int-btn" data-v="2" onclick="selInt(this,'fatigue')"><span class="nb">2</span>Mod</button>
+        <button class="int-btn" data-v="3" onclick="selInt(this,'fatigue')"><span class="nb">3</span>Sev</button>
+        <button class="int-btn" data-v="4" onclick="selInt(this,'fatigue')"><span class="nb">4</span>Max</button>
+      </div>
+    </div>
+    <hr class="sep">
+    <div class="sym-block">
+      <div class="sym-label">🌀 Dyskinesia</div>
+      <div class="int-row" data-sym="dyskinesia">
+        <button class="int-btn" data-v="0" onclick="selInt(this,'dyskinesia')"><span class="nb">0</span>None</button>
+        <button class="int-btn" data-v="1" onclick="selInt(this,'dyskinesia')"><span class="nb">1</span>Mild</button>
+        <button class="int-btn" data-v="2" onclick="selInt(this,'dyskinesia')"><span class="nb">2</span>Mod</button>
+        <button class="int-btn" data-v="3" onclick="selInt(this,'dyskinesia')"><span class="nb">3</span>Sev</button>
+        <button class="int-btn" data-v="4" onclick="selInt(this,'dyskinesia')"><span class="nb">4</span>Max</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity -->
+  <div class="card">
+    <div class="card-title">🎯 Current Activity</div>
+    <div class="act-grid">
+      <button class="act-btn" data-a="Resting" onclick="selAct(this)"><span class="ae">🛋️</span>Resting</button>
+      <button class="act-btn" data-a="Walking" onclick="selAct(this)"><span class="ae">🚶</span>Walking</button>
+      <button class="act-btn" data-a="Eating" onclick="selAct(this)"><span class="ae">🍽️</span>Eating</button>
+      <button class="act-btn" data-a="Exercise" onclick="selAct(this)"><span class="ae">🤸</span>Exercise</button>
+      <button class="act-btn" data-a="Sleeping" onclick="selAct(this)"><span class="ae">😴</span>Sleeping</button>
+      <button class="act-btn" data-a="Other" onclick="selAct(this)"><span class="ae">💬</span>Other</button>
+    </div>
+  </div>
+
+  <!-- Notes -->
+  <div class="card">
+    <div class="card-title">📝 Notes (optional)</div>
+    <textarea class="note-input" id="noteInput" placeholder="Special symptoms, mood, anything unusual…" rows="3"></textarea>
+  </div>
+
+  <div style="height:10px"></div>
+</div>
+
+<!-- ═══════════════ REPORT PAGE ═══════════════ -->
+<div class="page" id="page-report">
+  <div style="padding-top:4px">
+    <div class="report-header">
+      <span class="report-title">My Records</span>
+      <span class="report-count" id="reportCount">0 entries</span>
+    </div>
+
+    <div class="report-filter">
+      <button class="filter-btn active" data-f="7" onclick="setFilter(this)">7 days</button>
+      <button class="filter-btn" data-f="14" onclick="setFilter(this)">14 days</button>
+      <button class="filter-btn" data-f="30" onclick="setFilter(this)">30 days</button>
+      <button class="filter-btn" data-f="all" onclick="setFilter(this)">All</button>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-grid" id="summaryGrid"></div>
+
+    <!-- Averages -->
+    <div class="card" id="avgCard" style="display:none">
+      <div class="card-title">📈 Average Scores</div>
+      <div class="avg-bars" id="avgBars"></div>
+    </div>
+
+    <!-- Export + AI Report -->
+    <button class="export-btn" onclick="exportCSV()">⬇️ Export CSV</button>
+    <button class="report-gen-btn" onclick="openReportModal()">✨ Generate AI Report</button>
+
+    <!-- Log list -->
+    <div id="logList"></div>
+    <div style="height:10px"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ SETTINGS PAGE ═══════════════ -->
+<div class="page" id="page-settings">
+  <div style="padding-top:4px">
+    <div class="card">
+      <div class="card-title">☁️ Google Sheets Sync</div>
+      <label class="settings-label">Apps Script Web App URL</label>
+      <input class="settings-input" type="url" id="scriptUrl"
+        placeholder="https://script.google.com/macros/s/..."
+        oninput="localStorage.setItem('sheetUrl',this.value)">
+
+      <div class="settings-note">
+        <strong>🔧 Setup in 3 steps:</strong>
+        1. Open Google Sheets → Extensions → Apps Script<br>
+        2. Paste this code and deploy as Web App (access: Anyone):<br><br>
+        <code>function doPost(e){</code><br>
+        <code>&nbsp;const s=SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();</code><br>
+        <code>&nbsp;const d=JSON.parse(e.postData.contents);</code><br>
+        <code>&nbsp;s.appendRow([d.timestamp,d.date,d.session,d.med,d.tremor,d.rigidity,d.balance,d.fatigue,d.dyskinesia,d.activity,d.note]);</code><br>
+        <code>&nbsp;return ContentService.createTextOutput("ok");</code><br>
+        <code>}</code><br><br>
+        3. Copy the deployment URL and paste it above.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗄️ Local Data</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px;">All entries are saved on this device. Clear only if needed.</p>
+      <button class="export-btn" onclick="exportCSV()">⬇️ Export all as CSV</button>
+      <button style="width:100%;background:none;border:2px solid var(--red);border-radius:12px;padding:13px;
+        font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--red);cursor:pointer;"
+        onclick="clearData()">🗑️ Clear all local data</button>
+    </div>
+  </div>
+</div>
+
+<!-- Submit bar (Log page only) -->
+<div class="submit-bar" id="submitBar">
+  <button class="submit-btn" id="submitBtn" onclick="doSubmit()">✔ Save Entry</button>
+</div>
+
+<!-- AI Report modal -->
+<div class="modal-overlay" id="reportModal" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✨ AI Summary Report</div>
+    <div id="reportContent"><div class="spinner">⏳</div></div>
+    <button class="modal-close" onclick="document.getElementById('reportModal').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──
+const S = { session:'', med:'', tremor:null, rigidity:null, balance:null, fatigue:null, dyskinesia:null, activity:'' };
+let filterDays = 7;
+
+// ── Clock ──
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleString('en-AU',{weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+setInterval(updateClock,1000); updateClock();
+
+// ── Auto session ──
+function autoSession() {
+  const h = new Date().getHours();
+  const s = h < 12 ? 'Morning' : h < 17 ? 'Noon' : 'Evening';
+  const b = document.querySelector(`.sess-btn[data-s="${s}"]`);
+  if (b) selSess(b);
+}
+
+// ── Tabs ──
+function showTab(t) {
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['log','report','settings'][i]===t));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+t).classList.add('active');
+  document.getElementById('submitBar').style.display = t==='log' ? 'block' : 'none';
+  if (t==='report') renderReport();
+}
+
+// ── Selectors ──
+function selSess(btn) {
+  document.querySelectorAll('.sess-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); S.session=btn.dataset.s;
+}
+function selMed(btn) {
+  document.querySelectorAll('.med-btn').forEach(b=>b.className='med-btn');
+  const c={ON:'s-on',OFF:'s-off',Peak:'s-peak','Wearing Off':'s-wear'};
+  btn.classList.add(c[btn.dataset.m]); S.med=btn.dataset.m;
+}
+function selInt(btn,sym) {
+  document.querySelectorAll(`[data-sym="${sym}"] .int-btn`).forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); S[sym]=parseInt(btn.dataset.v);
+}
+function selAct(btn) {
+  document.querySelectorAll('.act-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on'); S.activity=btn.dataset.a;
+}
+
+// ── Storage helpers ──
+function getEntries() {
+  try { return JSON.parse(localStorage.getItem('pdEntries')||'[]'); } catch{ return []; }
+}
+function saveEntries(arr) { localStorage.setItem('pdEntries', JSON.stringify(arr)); }
+
+// ── Submit ──
+async function doSubmit() {
+  const btn = document.getElementById('submitBtn');
+  const url = (localStorage.getItem('sheetUrl')||'').trim();
+  const now = new Date();
+
+  const entry = {
+    id: now.getTime(),
+    timestamp: now.toLocaleString('en-AU'),
+    date: now.toLocaleDateString('en-AU'),
+    session: S.session || '—',
+    med: S.med || '—',
+    tremor: S.tremor ?? '—',
+    rigidity: S.rigidity ?? '—',
+    balance: S.balance ?? '—',
+    fatigue: S.fatigue ?? '—',
+    dyskinesia: S.dyskinesia ?? '—',
+    activity: S.activity || '—',
+    note: document.getElementById('noteInput').value.trim()
+  };
+
+  // Save locally always
+  const entries = getEntries();
+  entries.unshift(entry);
+  saveEntries(entries);
+
+  // Sync to Sheets if URL set
+  if (url) {
+    btn.disabled=true; btn.textContent='Saving…';
+    try {
+      await fetch(url, {method:'POST',mode:'no-cors',
+        headers:{'Content-Type':'application/json'}, body:JSON.stringify(entry)});
+      showToast('✅ Saved + synced to Sheets!');
+    } catch {
+      showToast('💾 Saved locally (sync failed)');
+    } finally {
+      btn.disabled=false; btn.textContent='✔ Save Entry';
+    }
+  } else {
+    showToast('💾 Entry saved!');
+  }
+  resetForm();
+}
+
+function resetForm() {
+  document.querySelectorAll('.med-btn').forEach(b=>b.className='med-btn');
+  document.querySelectorAll('.int-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.act-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('noteInput').value='';
+  ['med','tremor','rigidity','balance','fatigue','dyskinesia','activity'].forEach(k=>S[k]=null);
+  S.med=''; S.activity='';
+}
+
+// ── Report ──
+function filteredEntries() {
+  const all = getEntries();
+  if (filterDays==='all') return all;
+  const cutoff = Date.now() - filterDays*24*60*60*1000;
+  return all.filter(e=>e.id>=cutoff);
+}
+
+function setFilter(btn) {
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  filterDays = btn.dataset.f==='all' ? 'all' : parseInt(btn.dataset.f);
+  renderReport();
+}
+
+function renderReport() {
+  const entries = filteredEntries();
+  document.getElementById('reportCount').textContent = entries.length+' entries';
+
+  // Summary cards
+  const syms = ['tremor','rigidity','balance','fatigue','dyskinesia'];
+  const grid = document.getElementById('summaryGrid');
+
+  if (entries.length===0) {
+    grid.innerHTML=''; 
+    document.getElementById('avgCard').style.display='none';
+    document.getElementById('logList').innerHTML=
+      '<div class="empty-state"><div class="ei">📋</div><p>No entries yet.<br>Start logging from the Log tab!</p></div>';
+    return;
+  }
+
+  // Compute averages
+  const avgs = {};
+  syms.forEach(s=>{
+    const vals = entries.map(e=>e[s]).filter(v=>v!=='—'&&v!==null&&v!==undefined);
+    avgs[s] = vals.length ? (vals.reduce((a,b)=>a+Number(b),0)/vals.length) : null;
+  });
+
+  const worstSym = syms.filter(s=>avgs[s]!==null).sort((a,b)=>avgs[b]-avgs[a])[0];
+  const bestSym  = syms.filter(s=>avgs[s]!==null).sort((a,b)=>avgs[a]-avgs[b])[0];
+  const onCount  = entries.filter(e=>e.med==='ON'||e.med==='Peak').length;
+  const offCount = entries.filter(e=>e.med==='OFF'||e.med==='Wearing Off').length;
+
+  grid.innerHTML = `
+    <div class="summary-card">
+      <div class="sc-label">TOTAL ENTRIES</div>
+      <div class="sc-val">${entries.length}</div>
+      <div class="sc-sub">in selected period</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">ON vs OFF</div>
+      <div class="sc-val">${onCount} / ${offCount}</div>
+      <div class="sc-sub">ON period / OFF period</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">WORST SYMPTOM</div>
+      <div class="sc-val" style="font-size:14px;padding-top:4px">${worstSym ? capFirst(worstSym) : '—'}</div>
+      <div class="sc-sub">${worstSym&&avgs[worstSym]!==null ? 'avg '+avgs[worstSym].toFixed(1)+'/4' : ''}</div>
+    </div>
+    <div class="summary-card">
+      <div class="sc-label">BEST SYMPTOM</div>
+      <div class="sc-val" style="font-size:14px;padding-top:4px">${bestSym&&bestSym!==worstSym ? capFirst(bestSym) : '—'}</div>
+      <div class="sc-sub">${bestSym&&avgs[bestSym]!==null ? 'avg '+avgs[bestSym].toFixed(1)+'/4' : ''}</div>
+    </div>
+  `;
+
+  // Avg bars
+  const labels = {tremor:'Tremor',rigidity:'Rigidity',balance:'Balance',fatigue:'Fatigue',dyskinesia:'Dyskinesia'};
+  document.getElementById('avgBars').innerHTML = syms.map(s=>
+    avgs[s]!==null ? `
+    <div class="avg-row">
+      <div class="avg-label">${labels[s]}</div>
+      <div class="avg-bar-bg"><div class="avg-bar-fill" style="width:${(avgs[s]/4)*100}%"></div></div>
+      <div class="avg-num">${avgs[s].toFixed(1)}</div>
+    </div>` : ''
+  ).join('');
+  document.getElementById('avgCard').style.display='block';
+
+  // Log list
+  const chipClass = v => v==='—'||v===null ? '' : `s${Math.min(4,Math.max(0,Math.round(v)))}`;
+  document.getElementById('logList').innerHTML = entries.map(e=>`
+    <div class="log-item">
+      <div class="log-top">
+        <span class="log-date">${e.date} ${e.timestamp.split(',')[1]||''}</span>
+        <span class="log-sess">${e.session}</span>
+      </div>
+      <div class="log-med">💊 ${e.med}</div>
+      <div class="log-scores">
+        <span class="score-chip ${chipClass(e.tremor)}">Tremor ${e.tremor}</span>
+        <span class="score-chip ${chipClass(e.rigidity)}">Rigid ${e.rigidity}</span>
+        <span class="score-chip ${chipClass(e.balance)}">Balance ${e.balance}</span>
+        <span class="score-chip ${chipClass(e.fatigue)}">Fatigue ${e.fatigue}</span>
+        <span class="score-chip ${chipClass(e.dyskinesia)}">Dysk. ${e.dyskinesia}</span>
+      </div>
+      ${e.note ? `<div class="log-note">📝 ${e.note}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// ── AI Report ──
+async function openReportModal() {
+  const entries = filteredEntries();
+  if (entries.length===0) { showToast('No entries to report yet!'); return; }
+
+  document.getElementById('reportModal').classList.add('open');
+  document.getElementById('reportContent').innerHTML='<div class="spinner">✨ Generating…</div>';
+
+  const summary = buildDataSummary(entries);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `You are a helpful assistant summarizing Parkinson's disease symptom tracking data for a patient to share with their neurologist. 
+
+Here is the symptom data (scores 0=none to 4=severe):
+${summary}
+
+Please write a clear, concise medical summary report (about 200-250 words) covering:
+1. Overall symptom patterns and severity trends
+2. Medication ON/OFF periods and their correlation with symptoms  
+3. Most and least problematic symptoms
+4. Any notable observations or concerns worth discussing with the doctor
+
+Write in a professional but easy-to-understand tone. Use plain paragraphs, no bullet points.`
+        }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.find(b=>b.type==='text')?.text || 'Could not generate report.';
+    document.getElementById('reportContent').innerHTML = `<div class="report-text">${text}</div>`;
+  } catch(e) {
+    document.getElementById('reportContent').innerHTML =
+      '<div class="report-text">⚠️ Could not connect to AI. Please check your internet connection.</div>';
+  }
+}
+
+function buildDataSummary(entries) {
+  const syms = ['tremor','rigidity','balance','fatigue','dyskinesia'];
+  const lines = [`Total entries: ${entries.length}`, `Period: ${entries[entries.length-1]?.date} to ${entries[0]?.date}`, ''];
+  const avgs = {};
+  syms.forEach(s=>{
+    const vals = entries.map(e=>e[s]).filter(v=>v!=='—'&&v!==null).map(Number);
+    avgs[s] = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : 'N/A';
+  });
+  lines.push('Average scores: '+syms.map(s=>`${s}=${avgs[s]}`).join(', '));
+  const onPct = Math.round(entries.filter(e=>e.med==='ON'||e.med==='Peak').length/entries.length*100);
+  lines.push(`Medication: ${onPct}% ON/Peak, ${100-onPct}% OFF/Wearing Off`);
+  const recent5 = entries.slice(0,5).map(e=>
+    `[${e.date} ${e.session}] Med:${e.med} T:${e.tremor} R:${e.rigidity} B:${e.balance} F:${e.fatigue} D:${e.dyskinesia}${e.note?' note:'+e.note:''}`
+  );
+  lines.push('', 'Most recent entries:', ...recent5);
+  return lines.join('\n');
+}
+
+function closeModal(e) {
+  if (e.target===document.getElementById('reportModal'))
+    document.getElementById('reportModal').classList.remove('open');
+}
+
+// ── Export CSV ──
+function exportCSV() {
+  const entries = getEntries();
+  if (!entries.length) { showToast('No data to export!'); return; }
+  const hdr = 'Timestamp,Date,Session,Medication,Tremor,Rigidity,Balance,Fatigue,Dyskinesia,Activity,Notes';
+  const rows = entries.map(e=>
+    [e.timestamp,e.date,e.session,e.med,e.tremor,e.rigidity,e.balance,e.fatigue,e.dyskinesia,e.activity,`"${(e.note||'').replace(/"/g,'""')}"`].join(',')
+  );
+  const csv = [hdr,...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download = 'pd-symptoms-'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  showToast('📥 CSV downloaded!');
+}
+
+// ── Clear data ──
+function clearData() {
+  if (confirm('Delete ALL local entries? This cannot be undone.')) {
+    localStorage.removeItem('pdEntries');
+    showToast('🗑️ All data cleared');
+    renderReport();
+  }
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+function capFirst(s) { return s.charAt(0).toUpperCase()+s.slice(1); }
+
+// ── Init ──
+window.onload = () => {
+  const u = localStorage.getItem('sheetUrl');
+  if (u) document.getElementById('scriptUrl').value=u;
+  autoSession();
+};
+</script>
+</body>
+</html>
